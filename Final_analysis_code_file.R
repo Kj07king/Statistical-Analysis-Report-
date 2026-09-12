@@ -14,6 +14,13 @@ select(cveID, dateAdded, dueDate, Remediation_Days)
 
 #Breaking down NVD json Feeds (2024-2026)
 
+# The code checks for JSON file existence to prevent runtime crashes and returning an empty typed data frame if missing
+parse_nvd_feed <- function(file_path) {
+  if (!file.exists(file_path)) {
+    warning("File not found: ", file_path)
+    return(data.frame(cveID = character(), cvss_score = numeric(), stringsAsFactors = FALSE))
+  }
+
 # The code reads the NVD JSON file into a list and extract its main array of vulnerability records
 raw_NVD <- fromJSON(file_path, simplifyVector = FALSE)
 vulns_NVD <-raw_NVD$vulnerabilities
@@ -55,6 +62,16 @@ nvd_2024 <- parse_nvd_feed("nvdcve-2.0-2024.json")
 nvd_2025 <- parse_nvd_feed("nvdcve-2.0-2025.json")
 nvd_2026 <- parse_nvd_feed("nvdcve-2.0-2026.json")
 
-# combining the NVD feeds and remove deuplicates form NVD records
+# The code combins the NVD feeds and remove deuplicates form NVD records
 nvd_combined <- bind_rows(nvd_2024, nvd_2025, nvd_2026) %>%
   distinct(cveID, .keep_all = TRUE) 
+
+# The code helps print console logs summarizing total imported NVD records by year and missing CVSS score counts
+cat("Data Quality Assessment:\n")
+cat("  - 2024 Records:", nrow(nvd_2024), "\n")
+cat("  - 2025 Records:", nrow(nvd_2025), "\n")
+cat("  - 2026 Records:", nrow(nvd_2026), "\n")
+cat("  - Total Records:", nrow(nvd_combined), "\n")
+cat("  - Records with no CVSS v3.1 score (NA):", sum(is.na(nvd_combined$cvss_score)), "\n\n")
+
+            
