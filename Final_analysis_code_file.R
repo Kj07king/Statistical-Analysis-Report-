@@ -1,5 +1,6 @@
 #library used in this project
 library(jsonlite)
+library(ggplot2)
 
 # we clean know_exploited_vulnerabilities
 cleaned_KEV_df <- read.csv("know_exploited_vulberabilities.csv" , stringsAsFactors = False) %>%
@@ -72,7 +73,7 @@ cat("  - 2024 Records:", nrow(nvd_2024), "\n")
 cat("  - 2025 Records:", nrow(nvd_2025), "\n")
 cat("  - 2026 Records:", nrow(nvd_2026), "\n")
 cat("  - Total Records:", nrow(nvd_combined), "\n")
-cat("  - Records with no CVSS v3.1 score (NA):", sum(is.na(nvd_combined$cvss_score)), "\n\n)
+cat("  - Records with no CVSS v3.1 score (NA):", sum(is.na(nvd_combined$cvss_score)), "\n\n")
 
 #Data Merging & Cleaning
 
@@ -103,3 +104,32 @@ cat(" - Dupliacte CVE IDs in final Data:", n_distinct(analysis_df$cveID) - nrow(
 cat("Severity distribution:\n")
 print(table(analysis_df$severity))
 
+#Visualiztions:
+# the code there is used to create a Scattor plot 
+scatter_plot <- ggplot(analysis_df, aes(x = cvss_score, y = Remediation_Days)) +
+  geom_point(alpha = 0.4, color = "navy") +
+  geom_smooth(method = "lm", color = "red", se = TRUE) +
+  theme_minimal() +
+  lab(
+    title = "CVSS Score vs. CISA Remediation Days (2024-2026)" ,
+    x = "CVSS v3.1 Base score",
+    y = "Mandated Remediation Window (Days)"
+  ) +
+theme(plot.title = element_text(hjust = 0.5, face = "bold"), axis.title = element_text(face = "bold"))
+
+print(scatter_plot)
+
+# the code there is used to create a box plot 
+box_plot<- ggplot(analysis_df, aes(x = Severity, y = Remediation_Days, fill = Severity)) +
+  geom_boxplot(alpha = 0.7) +
+  geom_jitter(width = 0.2, alpha = 0.3, size = 1) +
+  theme_minimal() +
+  labs(
+    title = "Remediation Window by CVSS Severity Tier (2024-2026)",
+    x = "CVSS v3.1 Severity Tier",
+    y = "Mandated Remediation Window (Days)"
+  ) +
+theme(plot.title = element_text(hjust = 0.5, face ="blod"),axis.title = elment_text(face = "blod"), legend.poistion = "none") +
+scale_fill_manual(value = c("Low" = "green", "Medium" = "purple", "High" = "orange", "Critical" = "gold"))
+
+print(box_plot)
