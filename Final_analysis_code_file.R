@@ -1,9 +1,11 @@
-#library used in this project
+#library used in this project:
 library(jsonlite)
 library(dplyr)
 library(lubridate)
 library(ggplot2)
 library(effectsize)
+library(car)           
+library(lmtest)        
 
 # we clean know_exploited_vulnerabilities
 cleaned_KEV_df <- read.csv("know_exploited_vulberabilities.csv" , stringsAsFactors = False) %>%
@@ -210,3 +212,39 @@ cat("EFFECT SIZE Squared \n")
 eta <- eta_squared(anova_fit, ci = 0.95)
 print(eta)
 cat("\n")
+
+#Assumption validatiors 
+
+# I evaluate residual normality using Shapiro-Wilk test with CLT context for large samples                 
+cat("--- NORMALITY OF RESIDUALS ---\n")
+
+shapiro_reg <- shapiro.test(residuals(lm_fit))
+cat("Shapiro-Wilk Test (Regression Residuals):\n")
+cat("  - W-statistic:", round(shapiro_reg$statistic, 4), "\n")
+cat("  - p-value:", round(shapiro_reg$p.value, 4), "\n")
+cat("  - Interpretation:", ifelse(shapiro_reg$p.value < 0.05, 
+    "Violated (p < 0.05) - but robust due to CLT (N > 30 per group)", 
+    "Satisfied (p >= 0.05)"), "\n\n")
+
+# I assess the homoscedasticity of linear model residuals using the Breusch-Pagan test
+cat("--- HOMOSCEDASTICITY ---\n")
+
+bp_test <- bptest(lm_fit)
+cat("Breusch-Pagan Test (Regression):\n")
+cat("  - BP-statistic:", round(bp_test$statistic, 4), "\n")
+cat("  - p-value:", round(bp_test$p.value, 4), "\n")
+cat("  - Interpretation:", ifelse(bp_test$p.value < 0.05, 
+    "Violated (p < 0.05) - heteroscedasticity present", 
+    "Satisfied (p >= 0.05) - homoscedasticity confirmed"), "\n\n")
+
+# the code performs Levene's test to evaluate homogeneity of variance across ANOVA severity groups
+cat("--- LEVENE'S TEST ---\n")
+
+levene_test <- leveneTest(Remediation_Days ~ Severity, data = analysis_df)
+cat("Levene's Test (ANOVA - Homogeneity of Variance):\n")
+cat("  - F-statistic:", round(levene_test$`F value`[1], 4), "\n")
+cat("  - p-value:", round(levene_test$`Pr(>F)`[1], 4), "\n")
+cat("  - Interpretation:", ifelse(levene_test$`Pr(>F)`[1] < 0.05, 
+    "Violated (p < 0.05) - unequal variances", 
+    "Satisfied (p >= 0.05) - equal variances confirmed"), "\n\n")
+
