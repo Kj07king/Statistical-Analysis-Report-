@@ -107,8 +107,8 @@ print(table(analysis_df$severity))
 #Visualiztions:
 # the code there is used to create a Scattor plot 
 scatter_plot <- ggplot(analysis_df, aes(x = cvss_score, y = Remediation_Days)) +
-  geom_point(alpha = 0.4, color = "navy") +
-  geom_smooth(method = "lm", color = "red", se = TRUE) +
+  geom_point(alpha = 0.4, color = "pink") +
+  geom_smooth(method = "lm", color = "yellow", se = TRUE) +
   theme_minimal() +
   lab(
     title = "CVSS Score vs. CISA Remediation Days (2024-2026)" ,
@@ -133,3 +133,34 @@ theme(plot.title = element_text(hjust = 0.5, face ="blod"),axis.title = elment_t
 scale_fill_manual(value = c("Low" = "green", "Medium" = "purple", "High" = "orange", "Critical" = "gold"))
 
 print(box_plot)
+
+# Descriptive Statistics
+
+Descripitive_stats <- analysis_df %>%
+  group_by(serverity) %>%
+  summarise(
+    count = n(),
+    mean_days = round(mean(Remediation_Days),3),
+    median_days = median(Remediation_Days),
+    sd_days = round(sd(Remediation_Days),3)<
+    IQR_days = IQR(Remediation_Days),
+    min_days = min(Remediation_Days),
+    max_days = max(Remedistion_Days)
+  )
+
+# prints the descriptive statics for remediation days written above in the code                   
+cat("Descriptive Statistics by Severity Tier:\n")
+print(Descriptive_stats)
+cat("\n")
+
+# prints the Cvss scroe mean,sd and remediation day mean,sd,median, and range and rounds some of the values to 3 decimal places 
+cat("Overall Summary Statistics:\n")
+cat("  - CVSS score mean:", round(mean(analysis_df$cvss_score), 3), "\n")
+cat("  - CVSS score sd:", round(sd(analysis_df$cvss_score), 3), "\n")
+cat("  - Remediation days mean:", round(mean(analysis_df$Remediation_Days), 3), "\n")
+cat("  - Remediation days sd:", round(sd(analysis_df$Remediation_Days), 3), "\n")
+cat("  - Remediation days median:", median(analysis_df$Remediation_Days), "\n")
+cat("  - Remediation days range:", min(analysis_df$Remediation_Days), "to", max(analysis_df$Remediation_Days), "\n\n")
+
+ 
+        
