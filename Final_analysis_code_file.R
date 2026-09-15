@@ -1,6 +1,9 @@
 #library used in this project
 library(jsonlite)
+library(dplyr)
+library(lubridate)
 library(ggplot2)
+library(effectsize)
 
 # we clean know_exploited_vulnerabilities
 cleaned_KEV_df <- read.csv("know_exploited_vulberabilities.csv" , stringsAsFactors = False) %>%
@@ -135,7 +138,8 @@ scale_fill_manual(value = c("Low" = "green", "Medium" = "purple", "High" = "oran
 print(box_plot)
 
 # Descriptive Statistics
-
+                 
+# we calculate the summary statistics for remediation days grouped by CVSS severity tier
 Descripitive_stats <- analysis_df %>%
   group_by(serverity) %>%
   summarise(
@@ -162,5 +166,47 @@ cat("  - Remediation days sd:", round(sd(analysis_df$Remediation_Days), 3), "\n"
 cat("  - Remediation days median:", median(analysis_df$Remediation_Days), "\n")
 cat("  - Remediation days range:", min(analysis_df$Remediation_Days), "to", max(analysis_df$Remediation_Days), "\n\n")
 
- 
-        
+# Infernetial statistics: Model Application for linear regression and one-way anova 
+
+# the code fits an linear regression model testing CVSS base score as a predictor of remediation duration
+lm_fit <- lm(Remediation_Days ~ cvss_score, data = analysis_df)
+
+# Prints linear regression summary the console and it self                 
+cat("Liner Regression Summary:\n")
+linear_reg_summary <- summary(lm_fit)
+print(linear_reg_summary)
+cat("\n")
+                 
+# the code calculates and prints 95% confidence intervals for the regression coefficients
+cat("95% Confidence Intervals for Coefficients:\n")
+conf_intervals <- confint(lm_fit, level = 0.95)
+print(conf_intervals)
+cat("\n")
+                 
+# the code outputs information criteria  AIC , BIC and residual standard error to evaluate model fit
+cat("Model Fit Metrics:\n")
+cat("  - AIC:", round(AIC(lm_fit), 2), "\n")
+cat("  - BIC:", round(BIC(lm_fit), 2), "\n")
+cat("  - Residual Standard Error:", round(summary(lm_fit)$sigma, 3), "\n\n")
+
+# One-way Anova: 
+                 
+# I print the ANOVA section header and research question framing mean remediation differences across severity tiers on the console                 
+cat("MODEL 2: ONE-WAY ANOVA \n")
+cat("Research Question: Do severity tiers differ in mean remediation days?\n\n")
+                 
+# the code fits the one-way ANOVA model evaluating differences in mean remediation time across qualitative severity tiers
+anova_fit <- aov(Remediation_Days ~ Severity, data = analysis_df)
+                 
+# I print the overall ANOVA table including F-statistic and p-value
+cat("One-way ANOVA Summary:\n")
+anova_summary <- summary(anova_fit)
+print(anova_summary)
+cat("\n")
+                 
+# ETA-squared:
+# I Calculate Eta-Squared effect size with 95% confidence intervals to quantify the variance explained by severity tiers                
+cat("EFFECT SIZE Squared \n")
+eta <- eta_squared(anova_fit, ci = 0.95)
+print(eta)
+cat("\n")
