@@ -5,7 +5,9 @@ library(lubridate)
 library(ggplot2)
 library(effectsize)
 library(car)           
-library(lmtest)        
+library(lmtest) 
+library(pwr)           
+library(rstatix)    
 
 # we clean know_exploited_vulnerabilities
 cleaned_KEV_df <- read.csv("know_exploited_vulberabilities.csv" , stringsAsFactors = False) %>%
@@ -248,3 +250,66 @@ cat("  - Interpretation:", ifelse(levene_test$`Pr(>F)`[1] < 0.05,
     "Violated (p < 0.05) - unequal variances", 
     "Satisfied (p >= 0.05) - equal variances confirmed"), "\n\n")
 
+
+# code for dignoticst plots 
+
+# the code helps generate and export 2x2 diagnostic plots (Residuals vs Fitted, Q-Q, Scale-Location, Residuals vs Leverage) for OLS regression evaluation                 
+png("diagnostic_plots_regression.png", width = 12, height = 10, units = "in", res = 300)
+par(mfrow = c(2, 2))
+plot(lm_fit)
+dev.off()
+cat("Regression diagnostic plots saved to: diagnostic_plots_regression.png\n")
+                 
+# the code export ANOVA diagnostic plots assessing homoscedasticity and residual normality across severity tiers
+png("diagnostic_plots_anova.png", width = 12, height = 6, units = "in", res = 300)
+par(mfrow = c(1, 2))
+plot(anova_fit, which = 1:2)
+dev.off()
+cat("ANOVA diagnostic plots saved to: diagnostic_plots_anova.png\n\n")
+
+
+# the code give us the modle statistics summary
+
+# The code shows the  regression performance metrics including R-squared, overall model significance, and slope confidence intervals
+cat("  - R-squared:", round(reg_summary$r.squared, 6), "\n")
+cat("  - Adjusted R-squared:", round(reg_summary$adj.r.squared, 6), "\n")
+cat("  - F-statistic:", round(reg_summary$fstatistic[1], 3), "\n")
+cat("  - p-value:", round(pf(reg_summary$fstatistic[1], 
+                            reg_summary$fstatistic[2], 
+                            reg_summary$fstatistic[3], 
+                            lower.tail = FALSE), 4), "\n")
+cat("  - Slope (Beta 1):", round(coef(lm_fit)[2], 4), "\n")
+cat("  - 95% CI for Beta 1: [", round(conf_intervals[2, 1], 4), ", ", 
+    round(conf_intervals[2, 2], 4), "]\n\n")
+                 
+# the code displays summarized ANOVA test parameters, F-statistic, p-value, and Eta-squared effect size confidence bounds
+cat("ANOVA Performance:\n")
+cat("  - F-statistic:", round(anova_summary[[1]]$`F value`[1], 3), "\n")
+cat("  - p-value:", round(anova_summary[[1]]$`Pr(>F)`[1], 4), "\n")
+cat("  - Eta-squared:", round(eta$effsize[1], 6), "\n")
+cat("  - 95% CI for Eta-squared: [", round(eta$conf.low[1], 6), ", ", 
+    round(eta$conf.high[1], 6), "]\n\n")
+
+# statistical test power analysis
+
+# we use the the code to help calculate post-hoc statistical power for the ANOVA model based on sample size, 4 groups, and observed effect size (Cohen's f)                 
+power_result <- pwr.anova.test(
+  k = 4,
+  n = nrow(analysis_df) / 4,
+  f = sqrt(eta$effsize[1] / (1 - eta$effsize[1])),
+  sig.level = 0.05
+  
+# we run this code to see the statistical power and evaluate against the standard 0.80 benchmark for Type II error risk
+cat("Observed Statistical Power (ANOVA):\n")
+cat("  - Power:", round(power_result$power, 4), "\n")
+cat("  - Interpretation:", ifelse(power_result$power >= 0.80, 
+    "Adequate power (>= 0.80)", 
+    "Low power (< 0.80) - high risk of Type II error"), "\n\n")
+
+# The code export the final dataset
+  
+# exports a clean analysis_df dataset 
+write.csv(analysis_df, "analysis_df_final.csv", row.names = FALSE)
+  
+sessionInfo()
+                 
