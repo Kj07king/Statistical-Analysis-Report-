@@ -10,13 +10,13 @@ library(pwr)
 library(rstatix)    
 
 # we clean know_exploited_vulnerabilities
-cleaned_KEV_df <- read.csv("know_exploited_vulnerabilities.csv" , stringsAsFactors = False) %>%
+cleaned_KEV_df <- read.csv("known_exploited_vulnerabilities.csv" , stringsAsFactors = FALSE) %>%
   mutate(
-    dateAdded = as.Data(dateAdded),
-    dueDate = as.Data(dueDate),
+    dateAdded = as.Date(dateAdded),
+    dueDate = as.Date(dueDate),
     Remediation_Days = as.numeric(difftime(dueDate, dateAdded, units = "days"))
   ) %>%
-filter(Remediation_day >= 0) %>%
+filter(Remediation_Days >= 0) %>%
 distinct(cveID, .keep_all = TRUE)
 select(cveID, dateAdded, dueDate, Remediation_Days)
 
@@ -64,7 +64,7 @@ df <-data.frame(
 #the code helps remove records by retaining only unique CVE IDs then return the finalized data frame
 df <- df %>% distinct(cveID, .keep_all = TRUE)
 return(df)
-                 
+}               
 # the code helps load NVD feeds
 nvd_2024 <- parse_nvd_feed("nvdcve-2.0-2024.json")
 nvd_2025 <- parse_nvd_feed("nvdcve-2.0-2025.json")
