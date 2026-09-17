@@ -10,7 +10,7 @@ library(pwr)
 library(rstatix)    
 
 # we clean know_exploited_vulnerabilities
-cleaned_KEV_df <- read.csv("know_exploited_vulberabilities.csv" , stringsAsFactors = False) %>%
+cleaned_KEV_df <- read.csv("know_exploited_vulnerabilities.csv" , stringsAsFactors = False) %>%
   mutate(
     dateAdded = as.Data(dateAdded),
     dueDate = as.Data(dueDate),
