@@ -60,7 +60,7 @@ extracted <-lapply(vulns_NVD, extract_one)
 # The code helps Convert the extracted list into a clean and  structured data frame with typed columns for CVE IDs and scores
 df <-data.frame(
   cveID = vapply(extracted, function(x) x$cveID, character(1)),
-  cvss_score = vapply(extracted, function(x) ifelse(is.null(x$cvss_score),NA_real_,x$cvss_score),numeric(1)),
+  cvss_score = vapply(extracted, function(x) ifelse(is.null(x$cvss_score), NA_real_, x$cvss_score), numeric(1)),
   stringsAsFactors = FALSE
 )
 
