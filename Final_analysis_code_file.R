@@ -55,7 +55,7 @@ parse_nvd_feed <- function(file_path) {
   list(cveId = cve$id, cvss_score = score)
 }
 # the code repeat all vulnerability entries using extract_one to build a list of extracted IDs and scores
-extracted <-lapply(vulns_NVD, extract_one)
+  extracted <-lapply(vulns_NVD, extract_one)
                     
 # The code helps Convert the extracted list into a clean and  structured data frame with typed columns for CVE IDs and scores
 df <-data.frame(
