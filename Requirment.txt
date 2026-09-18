@@ -1,1 +1,12 @@
+These where the libraries i used for this project:
+library(jsonlite)      # For parsing NVD JSON feeds
+library(dplyr)         # For data manipulation
+library(lubridate)     # For date arithmetic
+library(ggplot2)       # For visualizations
+library(car)           # For Levene's test
+library(lmtest)        # For Breusch-Pagan test
+library(effectsize)    # For effect sizes (eta-squared)
+library(pwr)           # For power analysis
+library(rstatix)       # For post-hoc comparisons
 
+You can access the version of these libraries at the end of the code one you run it ie  sessionInfo()
