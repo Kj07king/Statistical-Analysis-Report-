@@ -17,11 +17,15 @@ cleaned_KEV_df <- read.csv("known_exploited_vulnerabilities.csv" , stringsAsFact
     Remediation_Days = as.numeric(difftime(dueDate, dateAdded, units = "days"))
   ) %>%
 filter(Remediation_Days >= 0) %>%
-distinct(cveID, .keep_all = TRUE)
-select(cveID, dateAdded, dueDate, Remediation_Days)
+ distinct(cveID, .keep_all = TRUE) %>%   
+ select(cveID, dateAdded, dueDate, Remediation_Days)
+
+# the code shows that the CSV file is loaded and prints the total recodrs and data range in it. 
+cat("CISA KEV Data Loaded:\n")
+cat("  - Total Records:", nrow(cleaned_KEV_df), "\n")
+cat("  - Date Range:", as.character(min(cleaned_KEV_df$dateAdded)), "to", as.character(max(cleaned_KEV_df$dateAdded)), "\n\n")
 
 #Breaking down NVD json Feeds (2024-2026)
-
 # The code checks for JSON file existence to prevent runtime crashes and returning an empty typed data frame if missing
 parse_nvd_feed <- function(file_path) {
   if (!file.exists(file_path)) {
@@ -30,26 +34,25 @@ parse_nvd_feed <- function(file_path) {
   }
 
 # The code reads the NVD JSON file into a list and extract its main array of vulnerability records
-raw_NVD <- fromJSON(file_path, simplifyVector = FALSE)
-vulns_NVD <-raw_NVD$vulnerabilities
+  raw_NVD <- fromJSON(file_path, simplifyVector = FALSE)
+  vulns_NVD <-raw_NVD$vulnerabilities
 
 # the data in side vulnerability entry to filtered into its unique CVE ID and CVSS v3.1 metrics
-extract_one <- function(entry){
-  cve <- entry$cve
-  cid <- cve$id
-  metrics <- cve$metrics
-  v31 <- metrics$cvssMetricV31
+  extract_one <- function(entry){
+    cve <- entry$cve
+    metrics <- cve$metrics
+    v31 <- metrics$cvssMetricV31
   
 # The code extracts the primary CVSS v3.1 base score and defaulting to NA if metrics are missing
-  score <- NA_real_
-  if(!is.null(v31) && length(v31) > 0) {
-    types <- sapply(v31, function(m) m$type)
-    primary_idx <- which(types == "Primary")
-    chosen <- if (length(primary_idx) > 0) v31[[primary_idx[1]]] else v31 [[1]]
-    score <- chosen$cvssData$baseScore
-  }
+    score <- NA_real_
+    if (!is.null(v31) && length(v31) > 0) {
+      types <- sapply(v31, function(m) m$type)
+      primary_idx <- which(types == "Primary")
+      chosen <- if (length(primary_idx) > 0) v31[[primary_idx[1]]] else v31 [[1]]
+      score <- chosen$cvssData$baseScore
+    }
 # The code returns the extracted CVE ID and CVSS score as a key-value list to complete the inner function
-  list(cveId = cid, cvss_score = score)
+  list(cveId = cve$id, cvss_score = score)
 }
 # the code repeat all vulnerability entries using extract_one to build a list of extracted IDs and scores
 extracted <-lapply(vulns_NVD, extract_one)
@@ -85,31 +88,31 @@ cat("  - Records with no CVSS v3.1 score (NA):", sum(is.na(nvd_combined$cvss_sco
 #Data Merging & Cleaning
 
 # The code merges CISA KEV and NVD datasets by CVE ID to a new dataset analysis_df and then filters out missing CVSS scores record and remediation days
-analysis_df <- inner_join(kev_def, nvd_combined, by = "cveID") %>%
-  filter(!is.na(cvss_score), !is.na(Remediation_day))
+analysis_df <- inner_join(cleaned_KEV_df , nvd_combined, by = "cveID") %>%
+  filter(!is.na(cvss_score), !is.na(Remediation_Days))
 
-# we divided the code into categorize CVSS scores into standard qualitative severity tiers based on NVD base score thresholds for the One-way Anova test
+# we divided the code into categorize CVSS scores into standard qualitative Severity tiers based on NVD base score thresholds for the One-way Anova test
 analysis_df <- analysis_df %>%
   mutate(
-    severity = case_when(
+    Severity = case_when(
       cvss_score >= 9.0 ~"Critical",
       cvss_score >= 7.0 ~"High",
       cvss_score >= 4.0 ~"Medium",
       TRUE ~"Low"
     ),
-# The code converts severity to an ordered factor ensuring proper sequence for statistical models and plots
-    severity = factor(severity, levels = c("Low","Medium","High","Critical"))
+# The code converts Severity to an ordered factor ensuring proper sequence for statistical models and plots
+    Severity = factor(Severity, levels = c("Low","Medium","High","Critical"))
   )
 
 # I have included this code as it helps log data quality diagnostics which helps verify final sample size and  total missing scores and zero residual duplicates
 cat("Data Quality Assessment:\n")
-cat(" - Final Analysis Records:," nrow(analysis_df),"\n")
-cat(" - Missing CVSS Scores in NVD:," sum(is.na(nvd_combined$cvss_score)),"\n")
-cat(" - Dupliacte CVE IDs in final Data:", n_distinct(analysis_df$cveID) - nrow(analysis_df),"\n\n")
+cat("  - Final Analysis Records:", nrow(analysis_df), "\n")
+cat("  - Missing CVSS Scores in NVD:", sum(is.na(nvd_combined$cvss_score)), "\n")
+cat("  - Duplicate CVE IDs in Final Data:", n_distinct(analysis_df$cveID) - nrow(analysis_df), "\n\n")
 
-# To output the frequency counts of vulnerabilities across each CVSS severity tier to check if there is balance between categories 
+# To output the frequency counts of vulnerabilities across each CVSS Severity tier to check if there is balance between categories 
 cat("Severity distribution:\n")
-print(table(analysis_df$severity))
+print(table(analysis_df$Severity))
 
 #Visualiztions:
 # the code there is used to create a Scattor plot 
@@ -117,14 +120,17 @@ scatter_plot <- ggplot(analysis_df, aes(x = cvss_score, y = Remediation_Days)) +
   geom_point(alpha = 0.4, color = "pink") +
   geom_smooth(method = "lm", color = "yellow", se = TRUE) +
   theme_minimal() +
-  lab(
+  labs(
     title = "CVSS Score vs. CISA Remediation Days (2024-2026)" ,
     x = "CVSS v3.1 Base score",
     y = "Mandated Remediation Window (Days)"
   ) +
-theme(plot.title = element_text(hjust = 0.5, face = "bold"), axis.title = element_text(face = "bold"))
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"), axis.title = element_text(face = "bold"))
 
+# prints the scatter_plot code above and saves a png file of it in the users file path and notifises the user about it through the console  
 print(scatter_plot)
+ggsave("scatter_cvss_vs_remediation.png", scatter_plot, width = 8, height = 6, dpi = 300)
+cat("Scatterplot saved to: scatter_cvss_vs_remediation.png\n")
 
 # the code there is used to create a box plot 
 box_plot<- ggplot(analysis_df, aes(x = Severity, y = Remediation_Days, fill = Severity)) +
@@ -136,29 +142,32 @@ box_plot<- ggplot(analysis_df, aes(x = Severity, y = Remediation_Days, fill = Se
     x = "CVSS v3.1 Severity Tier",
     y = "Mandated Remediation Window (Days)"
   ) +
-theme(plot.title = element_text(hjust = 0.5, face ="blod"),axis.title = elment_text(face = "blod"), legend.poistion = "none") +
-scale_fill_manual(value = c("Low" = "green", "Medium" = "purple", "High" = "orange", "Critical" = "gold"))
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"), axis.title = element_text(face = "bold"), legend.position = "none") +
+  scale_fill_manual(values = c("Low" = "green", "Medium" = "purple", "High" = "orange", "Critical" = "gold"))
 
+# prints the box_plot code above and saves a png file of it in the users file path and notifises the user about it through the console                   
 print(box_plot)
+ggsave("boxplot_Severity_vs_remediation.png", box_plot, width = 8, height = 6, dpi = 300)
+cat("Boxplot saved to: boxplot_Severity_vs_remediation.png\n\n")
 
 # Descriptive Statistics
                  
-# we calculate the summary statistics for remediation days grouped by CVSS severity tier
-Descripitive_stats <- analysis_df %>%
-  group_by(serverity) %>%
+# we calculate the summary statistics for remediation days grouped by CVSS Severity tier
+Descr_stats <- analysis_df %>%
+  group_by(Severity) %>%
   summarise(
-    count = n(),
-    mean_days = round(mean(Remediation_Days),3),
-    median_days = median(Remediation_Days),
-    sd_days = round(sd(Remediation_Days),3)<
-    IQR_days = IQR(Remediation_Days),
-    min_days = min(Remediation_Days),
-    max_days = max(Remedistion_Days)
+    Count = n(),
+    mean_Days = round(mean(Remediation_Days), 3),
+    median_Days = median(Remediation_Days),
+    sd_Days = round(sd(Remediation_Days), 3),
+    IQR_Days = IQR(Remediation_Days),
+    min_Days = min(Remediation_Days),
+    max_Days = max(Remediation_Days)
   )
 
 # prints the descriptive statics for remediation days written above in the code                   
 cat("Descriptive Statistics by Severity Tier:\n")
-print(Descriptive_stats)
+print(Descr_stats)
 cat("\n")
 
 # prints the Cvss scroe mean,sd and remediation day mean,sd,median, and range and rounds some of the values to 3 decimal places 
@@ -195,11 +204,11 @@ cat("  - Residual Standard Error:", round(summary(lm_fit)$sigma, 3), "\n\n")
 
 # One-way Anova: 
                  
-# I print the ANOVA section header and research question framing mean remediation differences across severity tiers on the console                 
+# I print the ANOVA section header and research question framing mean remediation differences across Severity tiers on the console                 
 cat("MODEL 2: ONE-WAY ANOVA \n")
-cat("Research Question: Do severity tiers differ in mean remediation days?\n\n")
+cat("Research Question: Do Severity tiers differ in mean remediation days?\n\n")
                  
-# the code fits the one-way ANOVA model evaluating differences in mean remediation time across qualitative severity tiers
+# the code fits the one-way ANOVA model evaluating differences in mean remediation time across qualitative Severity tiers
 anova_fit <- aov(Remediation_Days ~ Severity, data = analysis_df)
                  
 # I print the overall ANOVA table including F-statistic and p-value
@@ -209,7 +218,7 @@ print(anova_summary)
 cat("\n")
                  
 # ETA-squared:
-# I Calculate Eta-Squared effect size with 95% confidence intervals to quantify the variance explained by severity tiers                
+# I Calculate Eta-Squared effect size with 95% confidence intervals to quantify the variance explained by Severity tiers                
 cat("EFFECT SIZE Squared \n")
 eta <- eta_squared(anova_fit, ci = 0.95)
 print(eta)
@@ -239,7 +248,7 @@ cat("  - Interpretation:", ifelse(bp_test$p.value < 0.05,
     "Violated (p < 0.05) - heteroscedasticity present", 
     "Satisfied (p >= 0.05) - homoscedasticity confirmed"), "\n\n")
 
-# the code performs Levene's test to evaluate homogeneity of variance across ANOVA severity groups
+# the code performs Levene's test to evaluate homogeneity of variance across ANOVA Severity groups
 cat("--- LEVENE'S TEST ---\n")
 
 levene_test <- leveneTest(Remediation_Days ~ Severity, data = analysis_df)
@@ -260,7 +269,7 @@ plot(lm_fit)
 dev.off()
 cat("Regression diagnostic plots saved to: diagnostic_plots_regression.png\n")
                  
-# the code export ANOVA diagnostic plots assessing homoscedasticity and residual normality across severity tiers
+# the code export ANOVA diagnostic plots assessing homoscedasticity and residual normality across Severity tiers
 png("diagnostic_plots_anova.png", width = 12, height = 6, units = "in", res = 300)
 par(mfrow = c(1, 2))
 plot(anova_fit, which = 1:2)
@@ -271,12 +280,12 @@ cat("ANOVA diagnostic plots saved to: diagnostic_plots_anova.png\n\n")
 # the code give us the modle statistics summary
 
 # The code shows the  regression performance metrics including R-squared, overall model significance, and slope confidence intervals
-cat("  - R-squared:", round(reg_summary$r.squared, 6), "\n")
-cat("  - Adjusted R-squared:", round(reg_summary$adj.r.squared, 6), "\n")
-cat("  - F-statistic:", round(reg_summary$fstatistic[1], 3), "\n")
-cat("  - p-value:", round(pf(reg_summary$fstatistic[1], 
-                            reg_summary$fstatistic[2], 
-                            reg_summary$fstatistic[3], 
+cat("  - R-squared:", round(linear_reg_summary$r.squared, 6), "\n")
+cat("  - Adjusted R-squared:", round(linear_reg_summary$adj.r.squared, 6), "\n")
+cat("  - F-statistic:", round(linear_reg_summary$fstatistic[1], 3), "\n")
+cat("  - p-value:", round(pf(linear_reg_summary$fstatistic[1], 
+                            linear_reg_summary$fstatistic[2], 
+                            linear_reg_summary$fstatistic[3], 
                             lower.tail = FALSE), 4), "\n")
 cat("  - Slope (Beta 1):", round(coef(lm_fit)[2], 4), "\n")
 cat("  - 95% CI for Beta 1: [", round(conf_intervals[2, 1], 4), ", ", 
@@ -293,13 +302,16 @@ cat("  - 95% CI for Eta-squared: [", round(eta$conf.low[1], 6), ", ",
 # statistical test power analysis
 
 # we use the the code to help calculate post-hoc statistical power for the ANOVA model based on sample size, 4 groups, and observed effect size (Cohen's f)                 
+
 power_result <- pwr.anova.test(
   k = 4,
   n = nrow(analysis_df) / 4,
   f = sqrt(eta$effsize[1] / (1 - eta$effsize[1])),
   sig.level = 0.05
-  
+)
+                 
 # we run this code to see the statistical power and evaluate against the standard 0.80 benchmark for Type II error risk
+                 
 cat("Observed Statistical Power (ANOVA):\n")
 cat("  - Power:", round(power_result$power, 4), "\n")
 cat("  - Interpretation:", ifelse(power_result$power >= 0.80, 
@@ -307,7 +319,7 @@ cat("  - Interpretation:", ifelse(power_result$power >= 0.80,
     "Low power (< 0.80) - high risk of Type II error"), "\n\n")
 
 # The code export the final dataset
-  
+                 
 # exports a clean analysis_df dataset 
 write.csv(analysis_df, "analysis_df_final.csv", row.names = FALSE)
   
