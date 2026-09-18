@@ -232,7 +232,7 @@ cat("--- NORMALITY OF RESIDUALS ---\n")
 shapiro_reg <- shapiro.test(residuals(lm_fit))
 cat("Shapiro-Wilk Test (Regression Residuals):\n")
 cat("  - W-statistic:", round(shapiro_reg$statistic, 4), "\n")
-cat("  - p-value:", round(shapiro_reg$p.value, 4), "\n")
+cat("  - p-value:", format(shapiro_reg$p.value, scientific = TRUE, digits = 5), "\n")
 cat("  - Interpretation:", ifelse(shapiro_reg$p.value < 0.05, 
     "Violated (p < 0.05) - but robust due to CLT (N > 30 per group)", 
     "Satisfied (p >= 0.05)"), "\n\n")
@@ -242,7 +242,7 @@ cat("--- HOMOSCEDASTICITY ---\n")
 
 bp_test <- bptest(lm_fit)
 cat("Breusch-Pagan Test (Regression):\n")
-cat("  - BP-statistic:", round(bp_test$statistic, 4), "\n")
+cat("  - p-value:", format(bp_test$p.value, scientific = TRUE, digits = 5), "\n")
 cat("  - p-value:", round(bp_test$p.value, 4), "\n")
 cat("  - Interpretation:", ifelse(bp_test$p.value < 0.05, 
     "Violated (p < 0.05) - heteroscedasticity present", 
@@ -254,7 +254,7 @@ cat("--- LEVENE'S TEST ---\n")
 levene_test <- leveneTest(Remediation_Days ~ Severity, data = analysis_df)
 cat("Levene's Test (ANOVA - Homogeneity of Variance):\n")
 cat("  - F-statistic:", round(levene_test$`F value`[1], 4), "\n")
-cat("  - p-value:", round(levene_test$`Pr(>F)`[1], 4), "\n")
+cat("  - p-value:", format(levene_test$`Pr(>F)`[1], scientific = TRUE, digits = 5), "\n")
 cat("  - Interpretation:", ifelse(levene_test$`Pr(>F)`[1] < 0.05, 
     "Violated (p < 0.05) - unequal variances", 
     "Satisfied (p >= 0.05) - equal variances confirmed"), "\n\n")
@@ -283,10 +283,7 @@ cat("ANOVA diagnostic plots saved to: diagnostic_plots_anova.png\n\n")
 cat("  - R-squared:", round(linear_reg_summary$r.squared, 6), "\n")
 cat("  - Adjusted R-squared:", round(linear_reg_summary$adj.r.squared, 6), "\n")
 cat("  - F-statistic:", round(linear_reg_summary$fstatistic[1], 3), "\n")
-cat("  - p-value:", round(pf(linear_reg_summary$fstatistic[1], 
-                            linear_reg_summary$fstatistic[2], 
-                            linear_reg_summary$fstatistic[3], 
-                            lower.tail = FALSE), 4), "\n")
+cat("  - p-value:", format(pf(linear_reg_summary$fstatistic[1],linear_reg_summary$fstatistic[2],linear_reg_summary$fstatistic[3],lower.tail = FALSE), scientific = TRUE, digits = 5), "\n")
 cat("  - Slope (Beta 1):", round(coef(lm_fit)[2], 4), "\n")
 cat("  - 95% CI for Beta 1: [", round(conf_intervals[2, 1], 4), ", ", 
     round(conf_intervals[2, 2], 4), "]\n\n")
@@ -294,7 +291,7 @@ cat("  - 95% CI for Beta 1: [", round(conf_intervals[2, 1], 4), ", ",
 # the code displays summarized ANOVA test parameters, F-statistic, p-value, and Eta-squared effect size confidence bounds
 cat("ANOVA Performance:\n")
 cat("  - F-statistic:", round(anova_summary[[1]]$`F value`[1], 3), "\n")
-cat("  - p-value:", round(anova_summary[[1]]$`Pr(>F)`[1], 4), "\n")
+cat("  - p-value:", format(anova_summary[[1]]$`Pr(>F)`[1], scientific = TRUE, digits = 5), "\n")
 cat("  - Eta-squared:", round(eta$effsize[1], 6), "\n")
 cat("  - 95% CI for Eta-squared: [", round(eta$conf.low[1], 6), ", ", 
     round(eta$conf.high[1], 6), "]\n\n")
