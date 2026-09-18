@@ -242,8 +242,8 @@ cat("--- HOMOSCEDASTICITY ---\n")
 
 bp_test <- bptest(lm_fit)
 cat("Breusch-Pagan Test (Regression):\n")
+cat("  - BP-statistic:", round(bp_test$statistic, 4), "\n")
 cat("  - p-value:", format(bp_test$p.value, scientific = TRUE, digits = 5), "\n")
-cat("  - p-value:", round(bp_test$p.value, 4), "\n")
 cat("  - Interpretation:", ifelse(bp_test$p.value < 0.05, 
     "Violated (p < 0.05) - heteroscedasticity present", 
     "Satisfied (p >= 0.05) - homoscedasticity confirmed"), "\n\n")
