@@ -61,7 +61,7 @@ extracted <-lapply(vulns_NVD, extract_one)
 df <-data.frame(
   cveID = vapply(extracted, function(x) x$cveID, character(1)),
   cvss_score = vapply(extracted, function(x) ifelse(is.null(x$cvss_score),NA_real_,x$cvss_score),numeric(1)),
-  stringsAsFacors = FALSE
+  stringsAsFactors = FALSE
 )
 
 #the code helps remove records by retaining only unique CVE IDs then return the finalized data frame
